@@ -445,7 +445,11 @@ function pickVoice(){
   if(!c.length) c = voices.filter(v=>norm(v).startsWith("en"));
   return c.find(v=>/Google|Daniel|Kate|Serena|Samantha|Karen|Moira|Arthur|Martha/i.test(v.name)) || c[0] || null;
 }
+/* Ses lletres es passen a sa veu en minúscula: si van en majúscula, l'iPhone diu "capital A".
+   Sa "a" tota sola la llegiria com l'article, per això s'envia "ay" (/eɪ/). */
+const sayL = L => { L = String(L).toUpperCase(); return L==="A" ? "ay" : L.toLowerCase(); };
 function utter(text, rate){
+  if(/^[A-Za-z]$/.test(text)) text = sayL(text);
   const u = new SpeechSynthesisUtterance(text);
   const v = pickVoice(); if(v) u.voice = v;
   u.lang = accent==="us" ? "en-US" : "en-GB"; u.rate = rate;
@@ -472,7 +476,7 @@ function speakSeq(items, rate=0.8, gap=450, onEach, onDone){
   /* per si algun navegador no avisa quan acaba de parlar */
   setTimeout(done, items.length*(1400+gap) + 1200);
 }
-const spellOut = arr => arr.map(l=>l.toUpperCase()).join(", ");
+const spellOut = arr => arr.map(sayL).join(", ");
 function stopAll(){ token++; if(synth) synth.cancel(); stopTimer(); }
 
 /* ================= PUNTUACIONS ================= */
@@ -1006,7 +1010,7 @@ function dDone(){
   let pts = Math.max(1, seqD.length*5 - dErrs*3 - dReplays*2);
   if(perfectRound){ dPerfect++; dStreak++; if(dStreak >= 3) pts *= 2; } else dStreak = 0;
   dResults[di] = perfectRound; dScore += pts;
-  setTimeout(()=>speak(seqD.join(", "), .75), 700);
+  setTimeout(()=>speak(spellOut(seqD), .75), 700);
   const m = $("dMsg"); m.className = "msg good";
   m.innerHTML = `<span class="pts">+${pts}</span><span>${perfectRound ? "Ronda perfecta! " : ""}${pick(PRAISE)}</span>` + (dStreak>=3 ? `<span>🔥 Sa ronda val doble!</span>` : "");
   updatePot("dScore", dScore, dBest); renderStreak("dCombo", dStreak, dBest, "perfectes seguides");
